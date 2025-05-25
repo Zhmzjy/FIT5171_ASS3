@@ -33,7 +33,8 @@ public class BuyTicketTest {
         // Create a Flight and register it
         Timestamp depart  = Timestamp.valueOf("2025-01-01 10:00:00");
         Timestamp arrive  = Timestamp.valueOf("2025-01-01 12:00:00");
-        flight = new Flight(1, "CityA", "CityB", "F1", "Comp", depart, arrive, airplane);
+        int flightId = (int) (System.currentTimeMillis() % 100000);
+        flight = new Flight(flightId, "CityA", "CityB", "F" + flightId, "Comp", depart, arrive, airplane);
         FlightCollection.addFlight(flight);
 
         // Create two economy tickets (basePrice=100 → final=112 KZT)
@@ -50,20 +51,23 @@ public class BuyTicketTest {
 
     @Test
     public void testBuyTicketSingle_SuccessFlow() {
-        BuyTicket service = new BuyTicket();
-        service.buyTicket(1);
+        Ticket ticket = new Ticket(101, 200, flight, false, null);
+        TicketCollection.addTickets(new ArrayList<>(Arrays.asList(ticket)));
 
-        // 1) Ticket status toggled
-        assertTrue("Ticket1 should be purchased", ticket1.ticketStatus());
+        BuyTicket service = new BuyTicket();
+        outContent.reset();
+        service.buyTicket(101);
+
+        assertTrue("Ticket should be purchased", ticket.ticketStatus());
 
         // 2) Economy seat count decremented by exactly 1
         assertEquals("Economy seats should drop by 1", 4, airplane.getEconomySitsNumber());
 
         // 3) Price was reset to 200 → serviceTax(12%) → 224
-        assertEquals("Price should be 224", 224, ticket1.getPrice());
+        assertEquals("Price should be 224", 224, ticket.getPrice());
 
         // 4) Passenger details filled in
-        Passenger p = ticket1.getPassenger();
+        Passenger p = ticket.getPassenger();
         assertEquals("First name set", "John", p.getFirstName());
         assertEquals("Last name set",  "Doe",  p.getSecondName());
         assertEquals("Card number set",
